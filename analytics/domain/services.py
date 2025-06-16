@@ -16,4 +16,4 @@ class MetricService:
                 raise ValueError("Metric type must be between 1 and 3")
         except ValueError:
             raise ValueError("Metric value and type must be a float")
-        return Metric(plant_id=plant_id, metric_type=metric_type, metric_value=metric_value)
+        return Metric(plant_id,metric_type, metric_value)

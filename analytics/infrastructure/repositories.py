@@ -9,8 +9,8 @@ class MetricsRepository:
             metric_types_id = metric.metric_types_id
         )
         return Metric(
-            id = metric_model.id,
-            plant_id=metric_model.plant_id,
-            metric_value=metric_model.metric_value,
-            metric_types_id=metric_model.metric_types_id
+            metric.plant_id,
+            metric.metric_value,
+            metric.metric_types_id,
+            metric_model.id
         )

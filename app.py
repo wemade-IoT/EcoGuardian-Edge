@@ -1,9 +1,10 @@
 from flask import Flask
 
+from analytics.interfaces.services import metric_api
 from shared.infrastructre.database import init_db
 
 app = Flask(__name__)
-
+app.register_blueprint(metric_api)
 first_request = True
 
 @app.before_request

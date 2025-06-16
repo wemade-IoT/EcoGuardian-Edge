@@ -1,6 +1,5 @@
 
 from flask import request, Blueprint, jsonify
-from werkzeug.exceptions import NotFound
 
 from analytics.application.services import MetricApplicationService
 

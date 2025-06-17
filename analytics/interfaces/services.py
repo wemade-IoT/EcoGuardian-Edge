@@ -14,14 +14,12 @@ def create_metric():
         return auth_result
     data = request.json
     try:
-        plant_id = data['plant_id']
         metric_type = data['metric_types_id']
         metric_value = data['metric_value']
         device_id = data['device_id']
-        metric = metric_service.create_metric(plant_id, metric_type, metric_value,device_id,request.headers.get('X-API-Key'))
+        metric = metric_service.create_metric( metric_type, metric_value,device_id,request.headers.get('X-API-Key'))
         return jsonify({'status': 'success', 'data': {
             'id': metric.id,
-            'plant_id': metric.plant_id,
             'metric_types_id': metric.metric_types_id,
             'metric_value': metric.metric_value
         }}), 201

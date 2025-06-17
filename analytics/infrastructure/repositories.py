@@ -4,13 +4,13 @@ class MetricsRepository:
     def save(self, metric) -> Metric:
         # Logic to save the metric to a database or external service
         metric_model = MetricModel.create(
-            plant_id = metric.plant_id,
             metric_value = metric.metric_value,
-            metric_types_id = metric.metric_types_id
+            metric_types_id = metric.metric_types_id,
+            device_id = metric.device_id
         )
         return Metric(
-            metric.plant_id,
             metric.metric_value,
             metric.metric_types_id,
+            metric.device_id,
             metric_model.id
         )

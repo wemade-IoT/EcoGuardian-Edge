@@ -48,11 +48,16 @@ def start_periodic_fetch(callback=None):
 
 def send_to_backend(sensor_data):
     payload = {
-        "device_id": int(sensor_data["device_id"]),
-        "value": float(sensor_data["value"])
+        "metricValue": float(sensor_data["metric_value"]),
+        "metricTypesId": int(sensor_data["metric_types_id"]),
+        "deviceId": int(sensor_data["device_id"])
+    }
+    headers = {
+        "X-Device-Id": str(sensor_data["device_id"]),
+        "X-API-Key": sensor_data["api_key"]
     }
     try:
-        response = requests.post(BACKEND_URL, json=payload)
+        response = requests.post(BACKEND_URL, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Datos enviados al backend: {payload}")
     except Exception as e:
@@ -66,7 +71,12 @@ def process_sensor_data(sensor_data):
         'light': 2,
         'water': 3
     }
-    api_key = 'test-api-key'
+    # Diccionario de API keys por device_id (ahora como string)
+    api_keys = {
+        "1": 'testkey001',
+        "2": 'testkey002',
+        "3": 'testkey003'
+    }
     for sensor, value in sensor_data.items():
         if value is not None:
             metric_types_id = sensor_type_map.get(sensor)
@@ -78,12 +88,25 @@ def process_sensor_data(sensor_data):
             if metric_value is None:
                 print(f"No se encontró metric_value para {sensor} (device_id={device_id}), se omite la métrica.")
                 continue
-            auth_service.get_or_create_test_device(device_id, api_key)
+            device_id_str = str(device_id)
+            api_key = api_keys.get(device_id_str)
+            if not api_key:
+                print(f"No se encontró api_key para device_id={device_id}, se omite la métrica.")
+                continue
+            auth_service.get_or_create_test_device(device_id_str, api_key)
             try:
-                metric = metric_service.create_metric(metric_types_id, metric_value, device_id, api_key)
+                metric = metric_service.create_metric(metric_types_id, metric_value, device_id_str, api_key)
                 print(f"Métrica guardada: {metric}")
             except Exception as e:
                 print(f"Error guardando métrica para {sensor}: {e}")
-            # send_to_backend({"device_id": device_id, "value": metric_value})
+
+            send_to_backend({
+                "metric_value": metric_value,
+                "metric_types_id": metric_types_id,
+                "device_id": device_id_str,
+                "api_key": api_key
+            })
 
 start_periodic_fetch(process_sensor_data)
+
+

@@ -1,11 +1,11 @@
-from peewee import Model, CharField, DateTimeField
+from peewee import Model, IntegerField, CharField, DateTimeField
 
 from shared.infrastructre.database import db
 
 
 class Device(Model):
 
-      device_id = CharField(primary_key=True)
+      device_id = IntegerField(primary_key=True)
       api_key = CharField()
       created_at = DateTimeField()
 

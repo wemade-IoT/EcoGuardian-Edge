@@ -1,4 +1,3 @@
-
 from flask import request, Blueprint, jsonify
 
 from analytics.application.services import MetricApplicationService
@@ -14,10 +13,12 @@ def create_metric():
         return auth_result
     data = request.json
     try:
-        metric_type = data['metric_types_id']
-        metric_value = data['metric_value']
-        device_id = data['device_id']
-        metric = metric_service.create_metric( metric_type, metric_value,device_id,request.headers.get('X-API-Key'))
+        metric_type = data.get('metric_types_id') or data.get('metricTypesId')
+        metric_value = data.get('metric_value') or data.get('metricValue')
+        device_id = data.get('device_id') or data.get('deviceId')
+        if metric_type is None or metric_value is None or device_id is None:
+            return jsonify({'error': 'Missing required fields'}), 400
+        metric = metric_service.create_metric(metric_type, metric_value, device_id, request.headers.get('Api-Key'))
         return jsonify({'status': 'success', 'data': {
             'id': metric.id,
             'metric_types_id': metric.metric_types_id,

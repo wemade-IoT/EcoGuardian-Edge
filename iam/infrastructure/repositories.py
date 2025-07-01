@@ -8,7 +8,7 @@ class DeviceRepository:
         try:
             device = DeviceModel.get((DeviceModel.device_id == device_id) & (DeviceModel.api_key == api_key))
             return Device(device.device_id, device.api_key, device.created_at)
-        except DeviceModel.get().DoesNotExist:
+        except DeviceModel.DoesNotExist:
             return None
     @staticmethod
     def get_or_create_test_device(device_id:int,api_key:str) -> Optional[Device]:

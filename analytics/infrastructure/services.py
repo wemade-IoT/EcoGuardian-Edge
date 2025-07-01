@@ -5,9 +5,12 @@ import time
 from analytics.infrastructure.models import Metric as MetricModel
 from datetime import datetime, timedelta
 from collections import defaultdict
+import logging
 
-BACKEND_URL = 'https://ecoguardian-cgenhdd6dadrgbfz.brazilsouth-01.azurewebsites.net/api/v1/metric'
-PUSH_INTERVAL = 120  # segundos
+BACKEND_URL = 'http://localhost:9080/api/v1/metrics'
+PUSH_INTERVAL = 15# segundos
+
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
 
 def send_metric_to_backend(metric_value, metric_types_id, device_id, api_key):
     iam_service = AuthApplicationService()
@@ -25,16 +28,16 @@ def send_metric_to_backend(metric_value, metric_types_id, device_id, api_key):
     try:
         response = requests.post(BACKEND_URL, json=payload, headers=headers)
         response.raise_for_status()
-        print(f"Métrica enviada al backend: {payload}")
+        logging.info(f"Métrica enviada al backend: {payload}")
         return response.json()
     except Exception as e:
-        print(f"Error enviando métrica al backend: {e}")
+        logging.error(f"Error enviando métrica al backend: {e}")
         raise
 
 def get_average_metrics_last_2_minutes():
     now = datetime.now()
-    two_minutes_ago = now - timedelta(minutes=2)
-    metrics = MetricModel.select().where(MetricModel.created_at >= two_minutes_ago)
+    two_minutes_ago = now - timedelta(minutes=120)
+    metrics = list(MetricModel.select().where(MetricModel.created_at >= two_minutes_ago))
     grouped = defaultdict(list)
     for metric in metrics:
         grouped[(metric.metric_types_id, metric.device_id)].append(metric.metric_value)
@@ -44,7 +47,7 @@ def get_average_metrics_last_2_minutes():
         averages.append({
             'metric_types_id': metric_types_id,
             'device_id': device_id,
-            'avg_value': avg
+            'metric_value': avg
         })
     return averages
 
@@ -53,15 +56,16 @@ def push_all_metrics_to_backend(api_key):
     for avg in averages:
         try:
             send_metric_to_backend(
-                avg['avg_value'],
+                avg['metric_value'],
                 avg['metric_types_id'],
                 avg['device_id'],
                 api_key
             )
         except Exception as e:
-            print(f"No se pudo enviar el promedio de métricas tipo {avg['metric_types_id']}: {e}")
+            logging.error(f"No se pudo enviar el promedio de métricas tipo {avg['metric_types_id']}: {e}")
 
 def periodic_metrics_push(api_key):
+    logging.info("Hilo de envío periódico de métricas iniciado.")
     while True:
         push_all_metrics_to_backend(api_key)
         time.sleep(PUSH_INTERVAL)

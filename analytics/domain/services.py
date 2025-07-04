@@ -13,7 +13,7 @@ class MetricService:
             if not (0 <= metric_value <= 100):
                 raise ValueError("Metric value must be between 0 and 100 percentage")
             if not (1 <= metric_type <= 4):
-                raise ValueError("Metric type must be between 1 and 3")
+                raise ValueError("Metric type must be between 1 and 4")
         except ValueError:
             raise ValueError("Metric value and type must be a float")
         return Metric(metric_value, metric_type, device_id)

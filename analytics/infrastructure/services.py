@@ -5,21 +5,19 @@ import time
 from analytics.infrastructure.models import Metric as MetricModel
 from datetime import datetime, timedelta
 from collections import defaultdict
-import logging
 
-BACKEND_URL = 'http://localhost:9080/api/v1/metrics'
-PUSH_INTERVAL = 15# segundos
+BACKEND_URL = 'https://ecoguardian-cgenhdd6dadrgbfz.brazilsouth-01.azurewebsites.net/api/v1/MetricRegistry'
+PUSH_INTERVAL = 120  # segundos
 
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
-
-def send_metric_to_backend(metric_value, metric_types_id, device_id, api_key):
+def send_metric_registry_to_backend(device_id, metrics, api_key):
     iam_service = AuthApplicationService()
     if not iam_service.authenticate(device_id, api_key):
         raise ValueError("Autenticación fallida: device_id o api_key inválidos")
     payload = {
-        "metricValue": float(metric_value),
-        "metricTypesId": int(metric_types_id),
-        "deviceId": int(device_id)
+        "deviceId": int(device_id),
+        "metrics": [
+            {"metricValue": float(m.metric_value), "metricTypesId": int(m.metric_types_id)} for m in metrics
+        ]
     }
     headers = {
         "Device-Id": str(device_id),
@@ -28,46 +26,32 @@ def send_metric_to_backend(metric_value, metric_types_id, device_id, api_key):
     try:
         response = requests.post(BACKEND_URL, json=payload, headers=headers)
         response.raise_for_status()
-        logging.info(f"Métrica enviada al backend: {payload}")
+        print(f"Registro de métricas enviado al backend: {payload}")
         return response.json()
     except Exception as e:
-        logging.error(f"Error enviando métrica al backend: {e}")
+        print(f"Error enviando registro de métricas al backend: {e}")
         raise
 
-def get_average_metrics_last_2_minutes():
+def get_metrics_last_2_minutes():
     now = datetime.now()
-    two_minutes_ago = now - timedelta(minutes=120)
-    metrics = list(MetricModel.select().where(MetricModel.created_at >= two_minutes_ago))
+    two_minutes_ago = now - timedelta(minutes=2)
+    metrics = MetricModel.select().where(MetricModel.created_at >= two_minutes_ago)
     grouped = defaultdict(list)
     for metric in metrics:
-        grouped[(metric.metric_types_id, metric.device_id)].append(metric.metric_value)
-    averages = []
-    for (metric_types_id, device_id), values in grouped.items():
-        avg = sum(values) / len(values)
-        averages.append({
-            'metric_types_id': metric_types_id,
-            'device_id': device_id,
-            'metric_value': avg
-        })
-    return averages
+        grouped[metric.device_id].append(metric)
+    return grouped
 
-def push_all_metrics_to_backend(api_key):
-    averages = get_average_metrics_last_2_minutes()
-    for avg in averages:
+def push_all_metric_registries_to_backend(api_key):
+    grouped_metrics = get_metrics_last_2_minutes()
+    for device_id, metrics in grouped_metrics.items():
         try:
-            send_metric_to_backend(
-                avg['metric_value'],
-                avg['metric_types_id'],
-                avg['device_id'],
-                api_key
-            )
+            send_metric_registry_to_backend(device_id, metrics, api_key)
         except Exception as e:
-            logging.error(f"No se pudo enviar el promedio de métricas tipo {avg['metric_types_id']}: {e}")
+            print(f"No se pudo enviar el registro de métricas del device {device_id}: {e}")
 
 def periodic_metrics_push(api_key):
-    logging.info("Hilo de envío periódico de métricas iniciado.")
     while True:
-        push_all_metrics_to_backend(api_key)
+        push_all_metric_registries_to_backend(api_key)
         time.sleep(PUSH_INTERVAL)
 
 def start_periodic_metrics_push(api_key):

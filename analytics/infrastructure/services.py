@@ -6,7 +6,7 @@ from analytics.infrastructure.models import Metric as MetricModel
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-BACKEND_URL = 'https://ecoguardian-cgenhdd6dadrgbfz.brazilsouth-01.azurewebsites.net/api/v1/MetricRegistry'
+BACKEND_URL = 'https://ecoguardian-cgenhdd6dadrgbfz.brazilsouth-01.azurewebsites.net/api/v1/metric-registry'
 PUSH_INTERVAL = 120  # segundos
 
 def send_metric_registry_to_backend(device_id, metrics, api_key):

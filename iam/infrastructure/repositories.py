@@ -1,5 +1,5 @@
 from typing import Optional
-
+# Searches for the id and api key
 from iam.infrastructure.models import Device as DeviceModel
 from iam.domain.entities import Device
 class DeviceRepository:
